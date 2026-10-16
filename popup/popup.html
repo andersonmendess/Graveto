@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Graveto</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <svg class="logo" viewBox="11 7 116 116" aria-hidden="true">
+        <defs>
+          <linearGradient id="hot" x1="0" y1="116" x2="0" y2="14" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#ff5f33"/>
+            <stop offset="1" stop-color="#ffb46e"/>
+          </linearGradient>
+        </defs>
+        <path d="M88 18 V86 Q88 112 60 112 H36" fill="none" stroke="url(#hot)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M92 46 C95 32 103 24 118 20 C116 35 107 43 92 46 Z" fill="#ffb46e"/>
+        <circle cx="54" cy="52" r="24" fill="none" stroke="url(#hot)" stroke-width="18"/>
+        <circle cx="54" cy="52" r="8" fill="#ffc08f"/>
+      </svg>
+      <span>Graveto</span>
+    </div>
+    <button id="power" class="power" type="button" aria-pressed="true" title="Ligar / desligar efeitos">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v8"/><path d="M6.6 7.2a7.5 7.5 0 1 0 10.8 0"/></svg>
+    </button>
+  </header>
+
+  <section class="meter" aria-label="VU meter">
+    <canvas id="vu"></canvas>
+    <div class="meter-foot">
+      <span class="status"><i id="dot"></i><span id="status">Conectando…</span></span>
+      <span class="readout"><b id="clip">CLIP</b><span id="readout">−∞ dB</span></span>
+    </div>
+  </section>
+
+  <nav class="presets" aria-label="Presets">
+    <button type="button" data-preset="clean">Limpo</button>
+    <button type="button" data-preset="bass">Grave</button>
+    <button type="button" data-preset="slowedReverb">Slowed + Reverb</button>
+    <button type="button" data-preset="hall">Sala</button>
+  </nav>
+
+  <section class="module" data-module="bassOn">
+    <header class="module-head">
+      <h2>Bass Boost</h2>
+      <label class="switch" title="Ligar bass boost"><input type="checkbox" data-key="bassOn"><span></span></label>
+    </header>
+    <div class="row">
+      <label for="bassGain">Ganho</label>
+      <input id="bassGain" type="range" data-key="bassGain" min="0" max="18" step="0.5">
+      <output data-for="bassGain"></output>
+    </div>
+    <div class="row">
+      <label for="bassFreq">Frequência</label>
+      <input id="bassFreq" type="range" data-key="bassFreq" min="40" max="200" step="5">
+      <output data-for="bassFreq"></output>
+    </div>
+  </section>
+
+  <section class="module" data-module="reverbOn">
+    <header class="module-head">
+      <h2>Reverb</h2>
+      <label class="switch" title="Ligar reverb"><input type="checkbox" data-key="reverbOn"><span></span></label>
+    </header>
+    <div class="row">
+      <label for="reverbMix">Mix</label>
+      <input id="reverbMix" type="range" data-key="reverbMix" min="0" max="1" step="0.01">
+      <output data-for="reverbMix"></output>
+    </div>
+    <div class="row">
+      <label for="reverbSize">Tamanho</label>
+      <input id="reverbSize" type="range" data-key="reverbSize" min="0.5" max="8" step="0.1">
+      <output data-for="reverbSize"></output>
+    </div>
+  </section>
+
+  <section class="module" data-module="slowedOn">
+    <header class="module-head">
+      <h2>Slowed</h2>
+      <span class="tag" id="pitch"></span>
+      <label class="switch" title="Ligar slowed"><input type="checkbox" data-key="slowedOn"><span></span></label>
+    </header>
+    <div class="row">
+      <label for="slowedRate">Velocidade</label>
+      <input id="slowedRate" type="range" data-key="slowedRate" min="0.5" max="1" step="0.01">
+      <output data-for="slowedRate"></output>
+    </div>
+  </section>
+
+  <section class="master">
+    <div class="row">
+      <label for="volume">Volume</label>
+      <input id="volume" type="range" data-key="volume" min="0" max="1.5" step="0.01">
+      <output data-for="volume"></output>
+    </div>
+  </section>
+
+  <script src="../src/defaults.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

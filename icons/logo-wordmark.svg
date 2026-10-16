@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 128">
+  <defs>
+    <linearGradient id="hot" x1="0" y1="112" x2="0" y2="20" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff5f33"/>
+      <stop offset="1" stop-color="#ffb46e"/>
+    </linearGradient>
+    <radialGradient id="cap" cx="53" cy="49" r="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffd2a8"/>
+      <stop offset="1" stop-color="#ff7a45"/>
+    </radialGradient>
+  </defs>
+  <g transform="translate(-18 4)">
+    <g fill="none" stroke="url(#hot)" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M86 24 V86 Q86 108 62 108 H40" stroke-width="12"/>
+      <path d="M86 66 L101 52" stroke-width="7"/>
+    </g>
+    <path d="M100 53 C102 42 107 36 117 32 C116 43 111 50 100 53 Z" fill="#ffb46e"/>
+    <circle cx="56" cy="52" r="24" fill="none" stroke="url(#hot)" stroke-width="12"/>
+    <circle cx="56" cy="52" r="13.5" fill="none" stroke="#ff7a45" stroke-opacity=".3" stroke-width="1.5"/>
+    <circle cx="56" cy="52" r="9" fill="url(#cap)"/>
+    <text x="124" y="82" font-family="'Segoe UI', Inter, system-ui, sans-serif" font-weight="400" font-size="120" letter-spacing="-2" fill="#ff7a45">raveto</text>
+  </g>
+</svg>
