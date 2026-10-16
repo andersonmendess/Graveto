@@ -35,7 +35,7 @@ Dois mostradores clássicos, L e R, com agulha de balística real, LED de pico e
 Limpo, Grave, Slowed + Reverb e Sala. Use o botão de power para comparar com o áudio original.
 
 🔒 PRIVADO
-Todo o processamento acontece no seu navegador. Nenhum dado é coletado ou enviado.
+Todo o processamento acontece no seu navegador: o áudio nunca é gravado nem enviado para lugar nenhum.
 
 Observações:
 • Funciona com players HTML5 (<audio> e <video>).
@@ -82,8 +82,13 @@ O áudio que o usuário quer processar pode vir de qualquer site (YouTube, Sound
 
 **Código remoto:** Não, não uso código remoto.
 
-**Uso de dados:** não marque nenhuma categoria (a extensão não coleta dados) e marque as três
-certificações:
+**Uso de dados:** marque só **Conteúdo do site** e as três certificações. A FAQ da loja considera
+que a extensão lida com dados do usuário mesmo quando eles só são processados localmente, e o
+Graveto processa o som dos `<audio>`/`<video>` das páginas (sem gravar nem enviar nada).
+
+- ☑ Conteúdo do site — todas as outras categorias ficam desmarcadas
+
+Certificações:
 
 - Não vendo nem transfiro dados de usuários a terceiros fora dos casos de uso aprovados.
 - Não uso nem transfiro dados de usuários para fins não relacionados à finalidade única.
