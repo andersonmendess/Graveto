@@ -170,34 +170,159 @@ function showStatus([text, kind]) {
   $('#dot').className = kind;
 }
 
-// ---------- VU meter ----------
+// ---------- VU meter (analógico) ----------
 
 const MIN_DB = -48;
-const MAX_DB = 3;
-const SCALE = [-48, -36, -24, -18, -12, -6, 0];
 const toDb = (v) => (v > 1e-6 ? 20 * Math.log10(v) : -Infinity);
+
+// Dois mostradores clássicos: agulha com balística de VU (~300 ms), calibrada para
+// −12 dBFS RMS = 0 VU, faixa vermelha acima de 0 VU e LED de pico.
+const VU_REF_DBFS = -12;
+const VU_MIN = -20;
+const VU_MAX = 3;
+const NEEDLE_TAU = 0.065;
+const PEAK_LED = 0.891; // −1 dBFS
+const PEAK_HOLD_MS = 450;
+
+// Geometria em unidades de desenho; o canvas é escalado para a largura real do painel.
+const W = 302;
+const H = 118;
+const FACE_W = 146;
+const FACE_H = 112;
+const FACE_Y = 3;
+const FACES = [0, W - FACE_W];
+const SWEEP = (42 * Math.PI) / 180;
+const PIVOT_DROP = 26; // pivô abaixo da face, como nos medidores analógicos
+const RADIUS = 82;
 
 const canvas = $('#vu');
 const g = canvas.getContext('2d');
-const css = getComputedStyle(document.documentElement);
-const C = Object.fromEntries(
-  ['ok', 'warn', 'hot', 'seg-off', 'muted', 'dim'].map((k) => [k, css.getPropertyValue(`--${k}`).trim()]),
-);
+let res = 1; // pixels de canvas por unidade de desenho
+let faceLayers = [];
 
 const vu = {
-  rms: [0, 0],                    // amplitude com balística (ataque rápido, queda lenta)
-  hold: [-Infinity, -Infinity],   // pico segurado, dB
+  needle: [-0.04, -0.04],
+  peakUntil: [0, 0],
+  hold: [-Infinity, -Infinity], // pico segurado em dB, para o readout
   holdAt: [0, 0],
   clipAt: -1e9,
 };
 
+function vuPosition(v) {
+  const lo = Math.pow(10, VU_MIN / 20);
+  const hi = Math.pow(10, VU_MAX / 20);
+  return (Math.pow(10, v / 20) - lo) / (hi - lo);
+}
+
+const angleFor = (pos) => -SWEEP + pos * 2 * SWEEP;
+const polar = (cx, cy, angle, r) => [cx + Math.sin(angle) * r, cy - Math.cos(angle) * r];
+
+// A face é desenhada uma vez numa camada separada; a cada quadro só a agulha muda.
+function drawFace(label) {
+  const face = document.createElement('canvas');
+  face.width = Math.round(FACE_W * res);
+  face.height = Math.round(FACE_H * res);
+  const c = face.getContext('2d');
+  c.scale(res, res);
+
+  const cx = FACE_W / 2;
+  const cy = FACE_H + PIVOT_DROP;
+
+  c.beginPath();
+  c.roundRect(0, 0, FACE_W, FACE_H, 8);
+  const bg = c.createRadialGradient(cx, FACE_H * 0.55, 10, cx, FACE_H * 0.55, FACE_W * 0.75);
+  bg.addColorStop(0, '#fbf0d4');
+  bg.addColorStop(1, '#e7cf9c');
+  c.fillStyle = bg;
+  c.fill();
+  c.save();
+  c.clip();
+
+  // Arco da escala: preto até 0 VU, faixa vermelha depois.
+  const aZero = angleFor(vuPosition(0));
+  c.lineWidth = 1.2;
+  c.strokeStyle = '#2a1f17';
+  c.beginPath();
+  c.arc(cx, cy, RADIUS, angleFor(0) - Math.PI / 2, aZero - Math.PI / 2);
+  c.stroke();
+  c.lineWidth = 4;
+  c.strokeStyle = '#c8372d';
+  c.beginPath();
+  c.arc(cx, cy, RADIUS + 2, aZero - Math.PI / 2, angleFor(1) - Math.PI / 2);
+  c.stroke();
+
+  const labeled = new Set([-20, -10, -7, -5, -3, 0, 3]);
+  c.font = '600 9px "Segoe UI", system-ui, sans-serif';
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  for (const v of [-20, -10, -7, -5, -3, -2, -1, 0, 1, 2, 3]) {
+    const a = angleFor(vuPosition(v));
+    const major = labeled.has(v);
+    const [x1, y1] = polar(cx, cy, a, RADIUS);
+    const [x2, y2] = polar(cx, cy, a, RADIUS + (major ? 9 : 6));
+    c.strokeStyle = v > 0 ? '#c8372d' : '#2a1f17';
+    c.lineWidth = major ? 1.4 : 1;
+    c.beginPath();
+    c.moveTo(x1, y1);
+    c.lineTo(x2, y2);
+    c.stroke();
+    if (major) {
+      const [tx, ty] = polar(cx, cy, a, RADIUS + 15);
+      c.fillStyle = c.strokeStyle;
+      c.fillText(v > 0 ? `+${v}` : `${Math.abs(v)}`, tx, ty);
+    }
+  }
+
+  // Marcações de porcentagem por dentro do arco, como num VU clássico.
+  c.strokeStyle = 'rgba(42, 31, 23, 0.45)';
+  c.lineWidth = 1;
+  for (let i = 1; i <= 10; i++) {
+    const a = angleFor(vuPosition(20 * Math.log10(i / 10)));
+    const [x1, y1] = polar(cx, cy, a, RADIUS - 3);
+    const [x2, y2] = polar(cx, cy, a, RADIUS - (i % 5 === 0 ? 8 : 6));
+    c.beginPath();
+    c.moveTo(x1, y1);
+    c.lineTo(x2, y2);
+    c.stroke();
+  }
+
+  c.fillStyle = '#2a1f17';
+  c.font = '700 13px "Segoe UI", system-ui, sans-serif';
+  c.fillText('VU', cx, FACE_H - 34);
+
+  // Base escura que esconde o pivô.
+  const base = c.createLinearGradient(0, FACE_H - 18, 0, FACE_H);
+  base.addColorStop(0, '#2b221b');
+  base.addColorStop(1, '#1a1410');
+  c.fillStyle = base;
+  c.fillRect(0, FACE_H - 18, FACE_W, 18);
+  c.fillStyle = '#a39482';
+  c.font = '600 10px "Segoe UI", system-ui, sans-serif';
+  c.textAlign = 'left';
+  c.fillText(label, 10, FACE_H - 9);
+  c.textAlign = 'right';
+  c.fillText('GRAVETO', FACE_W - 10, FACE_H - 9);
+  c.restore();
+
+  return face;
+}
+
+function sizeCanvas() {
+  res = (canvas.clientWidth / W) * (devicePixelRatio || 1);
+  canvas.width = Math.round(W * res);
+  canvas.height = Math.round(H * res);
+  faceLayers = [drawFace('L'), drawFace('R')];
+}
+
 function stepMeter(dt, now, levels) {
+  const k = 1 - Math.exp(-dt / NEEDLE_TAU);
   for (let c = 0; c < 2; c++) {
-    const target = levels ? levels[c] : 0;
-    const tau = target > vu.rms[c] ? 0.05 : 0.3;
-    vu.rms[c] += (target - vu.rms[c]) * (1 - Math.exp(-dt / tau));
+    const rms = s.power && levels ? levels[c] : 0;
+    const target = Math.min(1.06, Math.max(-0.04, vuPosition(toDb(rms) - VU_REF_DBFS)));
+    vu.needle[c] += (target - vu.needle[c]) * k;
 
     const peak = levels ? levels[2 + c] : 0;
+    if (peak >= PEAK_LED) vu.peakUntil[c] = now + PEAK_HOLD_MS;
     const pdb = toDb(peak);
     if (pdb >= vu.hold[c]) {
       vu.hold[c] = pdb;
@@ -209,61 +334,56 @@ function stepMeter(dt, now, levels) {
   }
 }
 
-function sizeCanvas() {
-  const dpr = devicePixelRatio || 1;
-  canvas.width = Math.round(canvas.clientWidth * dpr);
-  canvas.height = Math.round(canvas.clientHeight * dpr);
-  g.setTransform(dpr, 0, 0, dpr, 0, 0);
-}
-
-function segColor(db) {
-  if (db >= -3) return C.hot;
-  if (db >= -12) return C.warn;
-  return C.ok;
-}
-
-function drawMeter() {
-  const W = canvas.clientWidth;
-  const H = canvas.clientHeight;
+function drawMeter(now) {
+  g.setTransform(res, 0, 0, res, 0, 0);
   g.clearRect(0, 0, W, H);
 
-  const x0 = 14;
-  const barW = W - x0;
-  const barH = 13;
-  const segW = 4;
-  const gap = 2;
-  const count = Math.floor((barW + gap) / (segW + gap));
-  const xOf = (db) => x0 + ((Math.max(MIN_DB, Math.min(MAX_DB, db)) - MIN_DB) / (MAX_DB - MIN_DB)) * barW;
-  const dbOfSeg = (i) => MIN_DB + ((i + 0.5) / count) * (MAX_DB - MIN_DB);
-
-  g.font = '600 10px system-ui, sans-serif';
-  g.textBaseline = 'middle';
-
   for (let c = 0; c < 2; c++) {
-    const y = 2 + c * (barH + 6);
-    g.fillStyle = C.muted;
-    g.textAlign = 'left';
-    g.fillText(c ? 'R' : 'L', 0, y + barH / 2 + 0.5);
+    const x = FACES[c];
+    const cx = x + FACE_W / 2;
+    const cy = FACE_Y + FACE_H + PIVOT_DROP;
+    g.drawImage(faceLayers[c], x, FACE_Y, FACE_W, FACE_H);
 
-    const level = toDb(vu.rms[c]);
-    const holdSeg = Math.floor(((vu.hold[c] - MIN_DB) / (MAX_DB - MIN_DB)) * count);
-    for (let i = 0; i < count; i++) {
-      const db = dbOfSeg(i);
-      const lit = db <= level;
-      g.fillStyle = lit || i === holdSeg ? segColor(db) : C['seg-off'];
-      g.fillRect(x0 + i * (segW + gap), y, segW, barH);
+    // Agulha (com sombra leve), recortada acima da base.
+    g.save();
+    g.beginPath();
+    g.roundRect(x, FACE_Y, FACE_W, FACE_H - 18, [8, 8, 0, 0]);
+    g.clip();
+    const [tx, ty] = polar(cx, cy, angleFor(vu.needle[c]), RADIUS + 6);
+    g.strokeStyle = 'rgba(0, 0, 0, 0.18)';
+    g.lineWidth = 2;
+    g.beginPath();
+    g.moveTo(cx + 2, cy);
+    g.lineTo(tx + 2, ty + 1);
+    g.stroke();
+    g.strokeStyle = '#1b1410';
+    g.lineWidth = 1.4;
+    g.beginPath();
+    g.moveTo(cx, cy);
+    g.lineTo(tx, ty);
+    g.stroke();
+    g.restore();
+
+    // LED de pico.
+    const lit = now < vu.peakUntil[c];
+    g.beginPath();
+    g.arc(x + FACE_W - 12, FACE_Y + 12, 4, 0, Math.PI * 2);
+    g.fillStyle = lit ? '#ff3b2f' : '#6b2a22';
+    g.fill();
+    if (lit) {
+      g.save();
+      g.shadowColor = '#ff3b2f';
+      g.shadowBlur = 10;
+      g.fill();
+      g.restore();
     }
-  }
 
-  // escala em dB
-  const sy = 2 + 2 * (barH + 6) + 6;
-  g.font = '9.5px system-ui, sans-serif';
-  g.fillStyle = C.dim;
-  g.textAlign = 'center';
-  for (const db of SCALE) {
-    const x = xOf(db);
-    g.fillRect(Math.round(x) - 0.5, sy - 4, 1, 3);
-    g.fillText(db === 0 ? '0' : String(db), Math.min(W - 6, Math.max(x0 + 6, x)), sy + 5);
+    if (!s.power) {
+      g.beginPath();
+      g.roundRect(x, FACE_Y, FACE_W, FACE_H, 8);
+      g.fillStyle = 'rgba(13, 10, 8, 0.55)';
+      g.fill();
+    }
   }
 }
 
@@ -281,7 +401,7 @@ function frame(now) {
   last = now;
   const a = aggregate(now);
   stepMeter(dt, now, a.levels);
-  drawMeter();
+  drawMeter(now);
   showReadout(now);
   showStatus(statusOf(a, now));
   requestAnimationFrame(frame);

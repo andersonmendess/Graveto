@@ -28,8 +28,8 @@ Diminua a velocidade e o tom juntos (de 0,50× a 1,00×) e adicione reverb com o
 🔊 BASS BOOST SEM DISTORÇÃO
 Até +18 dB de grave, com frequência ajustável de 40 a 200 Hz. Um limiter automático segura os picos para o som não estourar.
 
-📊 VU METER ESTÉREO
-Veja o nível dos canais L e R em tempo real, com pico segurado e alerta de clip.
+📊 VU METER ANALÓGICO
+Dois mostradores clássicos, L e R, com agulha de balística real, LED de pico e alerta de clip.
 
 ⚡ PRESETS PRONTOS
 Limpo, Grave, Slowed + Reverb e Sala. Use o botão de power para comparar com o áudio original.

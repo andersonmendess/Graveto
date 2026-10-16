@@ -81,7 +81,7 @@ button { font: inherit; color: inherit; }
   margin-bottom: 10px;
 }
 
-#vu { display: block; width: 100%; height: 66px; }
+#vu { display: block; width: 100%; aspect-ratio: 302 / 118; }
 
 .meter-foot {
   display: flex;

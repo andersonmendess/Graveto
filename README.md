@@ -4,7 +4,7 @@
 
 Extensão do Chrome (Manifest V3) que processa o áudio de qualquer `<audio>`/`<video>` da página:
 
-- **VU meter** estéreo — RMS com balística, pico segurado e indicador de CLIP
+- **VU meter** analógico estéreo — dois mostradores com agulha de balística real, LED de pico e indicador de CLIP
 - **Bass Boost** — lowshelf ajustável (0–18 dB, 40–200 Hz) com limiter para não distorcer
 - **Reverb** — convolução com impulso sintético (mix e tamanho da sala 0,5–8 s)
 - **Slowed** — reduz velocidade e tom juntos (0,50–1,00×), como nos edits "slowed + reverb"
