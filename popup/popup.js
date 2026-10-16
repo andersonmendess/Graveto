@@ -216,78 +216,54 @@ function sizeCanvas() {
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
-const MONO = '"Cascadia Mono", "JetBrains Mono", Consolas, monospace';
+function segColor(db) {
+  if (db >= -3) return C.hot;
+  if (db >= -12) return C.warn;
+  return C.ok;
+}
 
 function drawMeter() {
   const W = canvas.clientWidth;
   const H = canvas.clientHeight;
   g.clearRect(0, 0, W, H);
 
-  const x0 = 16;
+  const x0 = 14;
   const barW = W - x0;
-  const barH = 11;
-  const segW = 3;
+  const barH = 13;
+  const segW = 4;
   const gap = 2;
   const count = Math.floor((barW + gap) / (segW + gap));
-  const pos = (db) => (Math.max(MIN_DB, Math.min(MAX_DB, db)) - MIN_DB) / (MAX_DB - MIN_DB);
-  const xOf = (db) => x0 + pos(db) * barW;
+  const xOf = (db) => x0 + ((Math.max(MIN_DB, Math.min(MAX_DB, db)) - MIN_DB) / (MAX_DB - MIN_DB)) * barW;
+  const dbOfSeg = (i) => MIN_DB + ((i + 0.5) / count) * (MAX_DB - MIN_DB);
 
-  // Gradiente contínuo ao longo da escala: ciano → laranja (−12) → vermelho (≥ −3).
-  const grad = g.createLinearGradient(x0, 0, W, 0);
-  grad.addColorStop(0, C.ok);
-  grad.addColorStop(pos(-20), C.ok);
-  grad.addColorStop(pos(-9), C.warn);
-  grad.addColorStop(pos(-2), C.hot);
-  grad.addColorStop(1, C.hot);
-
+  g.font = '600 10px system-ui, sans-serif';
   g.textBaseline = 'middle';
-  g.textAlign = 'left';
 
   for (let c = 0; c < 2; c++) {
-    const y = 3 + c * (barH + 7);
-    g.font = `700 9.5px ${MONO}`;
+    const y = 2 + c * (barH + 6);
     g.fillStyle = C.muted;
+    g.textAlign = 'left';
     g.fillText(c ? 'R' : 'L', 0, y + barH / 2 + 0.5);
 
-    const litCount = Math.round(pos(toDb(vu.rms[c])) * count);
-
-    // trilho apagado
-    g.fillStyle = C['seg-off'];
-    for (let i = litCount; i < count; i++) g.fillRect(x0 + i * (segW + gap), y, segW, barH);
-
-    // trecho aceso, com brilho
-    if (litCount > 0) {
-      g.save();
-      g.beginPath();
-      for (let i = 0; i < litCount; i++) g.rect(x0 + i * (segW + gap), y, segW, barH);
-      g.fillStyle = grad;
-      g.shadowColor = toDb(vu.rms[c]) > -9 ? C.warn : C.ok;
-      g.shadowBlur = 8;
-      g.fill();
-      g.restore();
-    }
-
-    // pico segurado: linha fina brilhante
-    if (vu.hold[c] > MIN_DB) {
-      const hx = Math.min(W - 2, xOf(vu.hold[c]));
-      g.save();
-      g.fillStyle = vu.hold[c] >= -2 ? C.hot : '#ffffff';
-      g.shadowColor = g.fillStyle;
-      g.shadowBlur = 6;
-      g.fillRect(hx - 1, y - 2, 2, barH + 4);
-      g.restore();
+    const level = toDb(vu.rms[c]);
+    const holdSeg = Math.floor(((vu.hold[c] - MIN_DB) / (MAX_DB - MIN_DB)) * count);
+    for (let i = 0; i < count; i++) {
+      const db = dbOfSeg(i);
+      const lit = db <= level;
+      g.fillStyle = lit || i === holdSeg ? segColor(db) : C['seg-off'];
+      g.fillRect(x0 + i * (segW + gap), y, segW, barH);
     }
   }
 
   // escala em dB
-  const sy = 3 + 2 * (barH + 7) + 4;
-  g.font = `9px ${MONO}`;
-  g.textAlign = 'center';
+  const sy = 2 + 2 * (barH + 6) + 6;
+  g.font = '9.5px system-ui, sans-serif';
   g.fillStyle = C.dim;
+  g.textAlign = 'center';
   for (const db of SCALE) {
     const x = xOf(db);
-    g.fillRect(Math.round(x) - 0.5, sy - 3, 1, 3);
-    g.fillText(db === 0 ? '0' : String(db), Math.min(W - 6, Math.max(x0 + 8, x)), sy + 6);
+    g.fillRect(Math.round(x) - 0.5, sy - 4, 1, 3);
+    g.fillText(db === 0 ? '0' : String(db), Math.min(W - 6, Math.max(x0 + 6, x)), sy + 5);
   }
 }
 
