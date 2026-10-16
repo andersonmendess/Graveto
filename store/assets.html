@@ -1,0 +1,123 @@
+<!doctype html>
+<!--
+  Fonte das imagens da Chrome Web Store. Cada arte é escolhida por ?a=…
+  e renderizada com `node scripts/store-assets.mjs` (Chrome headless).
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Graveto — artes da loja</title>
+<style>
+  :root {
+    --bg: #0e0f12;
+    --panel: #16181d;
+    --line: #262a33;
+    --text: #e8eaed;
+    --muted: #8a909c;
+    --accent: #ff7a45;
+    --cyan: #38e8ff;
+    --ok: #3ddc84;
+    --warn: #ffc94a;
+    --hot: #ff4d4d;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { background: var(--bg); overflow: hidden; }
+  body { font-family: "Segoe UI", system-ui, sans-serif; color: var(--text); }
+  .art { position: relative; overflow: hidden; display: none; background: radial-gradient(80% 90% at 75% 50%, rgba(255, 122, 69, 0.16), transparent 70%), var(--bg); }
+  .art.on { display: block; }
+
+  /* capturas 1280×800 */
+  .shot { width: 1280px; height: 800px; }
+  .shot .copy { position: absolute; left: 96px; top: 0; bottom: 0; width: 560px; display: flex; flex-direction: column; justify-content: center; }
+  .shot .mark { width: 64px; height: 64px; margin-bottom: 40px; }
+  .shot h1 { font-size: 56px; line-height: 1.08; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 22px; }
+  .shot h1 em { font-style: normal; color: var(--accent); }
+  .shot p { font-size: 23px; line-height: 1.45; color: var(--muted); margin-bottom: 30px; }
+  .shot ul { list-style: none; padding: 0; display: grid; gap: 12px; font-size: 20px; }
+  .shot li { display: flex; align-items: center; gap: 12px; }
+  .shot li::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--accent); }
+  .shot .popup { position: absolute; right: 120px; top: 50%; width: 460px; transform: translateY(-50%); border-radius: 16px; border: 1px solid var(--line); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), 0 0 0 8px rgba(255, 255, 255, 0.02); }
+
+  /* promo tile 440×280 e marquee 1400×560: só o símbolo, sem texto */
+  .tile { width: 440px; height: 280px; }
+  .marquee { width: 1400px; height: 560px; }
+  .tile, .marquee { background: radial-gradient(60% 80% at 50% 50%, rgba(255, 122, 69, 0.2), transparent 70%), var(--bg); }
+  .vu {
+    position: absolute; inset: 0;
+    display: flex; gap: 6px; align-items: center; justify-content: center;
+    opacity: 0.3;
+    -webkit-mask-image: radial-gradient(closest-side, transparent 45%, #000 75%);
+  }
+  .vu i { width: 12px; border-radius: 3px; background: var(--ok); }
+  .center-mark { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+  .tile .center-mark { width: 150px; height: 150px; }
+  .marquee .center-mark { width: 300px; height: 300px; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="g" viewBox="18 18 92 92">
+    <path d="M90.9 37.1A38 38 0 1 0 101.4 70.6" fill="none" stroke="#ff7a45" stroke-width="12" stroke-linecap="round"/>
+    <path d="M62 70c4-12 8-12 12 0s8 12 12 0 8-12 12 0" fill="none" stroke="#38e8ff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+</svg>
+
+<section class="art shot" id="shot1">
+  <div class="copy">
+    <svg class="mark"><use href="#g"/></svg>
+    <h1><em>Slowed + reverb</em><br>em qualquer vídeo</h1>
+    <p>Velocidade, tom e ambiência em um clique — no YouTube, SoundCloud e em qualquer player da web.</p>
+    <ul>
+      <li>Slowed de 0,50× a 1,00×, tom cai junto</li>
+      <li>Reverb com tamanho de sala ajustável</li>
+      <li>Presets prontos e power para comparar</li>
+    </ul>
+  </div>
+  <img class="popup" src="../docs/popup-slowed-reverb.png" alt="">
+</section>
+
+<section class="art shot" id="shot2">
+  <div class="copy">
+    <svg class="mark"><use href="#g"/></svg>
+    <h1>Grave forte,<br><em>sem distorcer</em></h1>
+    <p>Bass boost de até +18 dB com limiter automático segurando os picos, e VU meter estéreo para ver o que você ouve.</p>
+    <ul>
+      <li>Frequência do grave de 40 a 200 Hz</li>
+      <li>VU com pico segurado e alerta de clip</li>
+      <li>Volume até 150% sem estourar</li>
+    </ul>
+  </div>
+  <img class="popup" src="../docs/popup-bass.png" alt="">
+</section>
+
+<section class="art tile" id="tile">
+  <div class="vu" id="vu-tile"></div>
+  <svg class="center-mark"><use href="#g"/></svg>
+</section>
+
+<section class="art marquee" id="marquee">
+  <div class="vu" id="vu-marquee"></div>
+  <svg class="center-mark"><use href="#g"/></svg>
+</section>
+
+<script>
+  // Barras de VU decorativas atrás do símbolo (determinísticas para a arte não mudar a cada render).
+  function bars(el, n, maxH) {
+    for (let i = 0; i < n; i++) {
+      const t = i / (n - 1);
+      const h = maxH * (0.25 + 0.75 * Math.abs(Math.sin(i * 0.9) * Math.cos(i * 0.37)) * (1 - Math.abs(t - 0.5)));
+      const b = document.createElement('i');
+      b.style.height = `${Math.round(h)}px`;
+      if (h > maxH * 0.7) b.style.background = 'var(--warn)';
+      el.append(b);
+    }
+  }
+  bars(document.getElementById('vu-tile'), 24, 150);
+  bars(document.getElementById('vu-marquee'), 74, 340);
+
+  const a = new URLSearchParams(location.search).get('a') || 'shot1';
+  document.getElementById(a).classList.add('on');
+</script>
+</body>
+</html>
